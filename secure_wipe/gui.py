@@ -61,12 +61,18 @@ class SecureWipeGUI:
         # Results area
         self._create_results_section(main_frame, row=3)
         
-        # Progress bar
-        self.progress = ttk.Progressbar(main_frame, mode='indeterminate')
+        # Progress bar (initially hidden)
+        self.progress = ttk.Progressbar(main_frame, mode='indeterminate', length=400)
         self.progress.grid(row=4, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(10, 0))
+        self.progress.grid_remove()  # Hide initially
+        
+        # Progress label (initially hidden)
+        self.progress_label = ttk.Label(main_frame, text="", font=('Arial', 9))
+        self.progress_label.grid(row=4, column=0, columnspan=3, pady=(35, 0))
+        self.progress_label.grid_remove()  # Hide initially
         
         # Warning message
-        self._create_warning_section(main_frame, row=5)
+        self._create_warning_section(main_frame, row=6)
         
         # Configure grid weights for responsive layout
         self.root.columnconfigure(0, weight=1)
@@ -163,7 +169,16 @@ class SecureWipeGUI:
     def _scan_devices(self):
         """Start device scanning in background thread."""
         self.scan_btn.config(state='disabled')
-        self.progress.start()
+        self.refresh_btn.config(state='disabled')
+        
+        # Show and start progress bar
+        self.progress.grid()  # Make progress bar visible
+        self.progress_label.grid()  # Make progress label visible
+        
+        self.progress.config(mode='indeterminate')
+        self.progress.start(10)  # Update every 10ms for smoother animation
+        self.progress_label.config(text="Scanning storage devices...")
+        
         self.status_label.config(text="🔍 Scanning storage devices...", style='')
         
         thread = threading.Thread(target=self._scan_thread)
@@ -173,7 +188,18 @@ class SecureWipeGUI:
     def _scan_thread(self):
         """Background thread for device scanning."""
         try:
+            # Update progress message during scan
+            self.root.after(0, lambda: self.progress_label.config(text="Discovering storage devices..."))
+            
             result = self.api.scan()
+            
+            # Update progress message for classification phase
+            if result["success"] and result["devices"]:
+                self.root.after(0, lambda: self.progress_label.config(text="Classifying devices..."))
+                # Small delay to show the classification phase
+                import time
+                time.sleep(0.5)
+            
             self.root.after(0, lambda: self._display_results(result))
         except Exception as e:
             self.root.after(0, lambda: self._show_error(f"Scan failed: {str(e)}"))
@@ -181,6 +207,16 @@ class SecureWipeGUI:
     def _display_results(self, result):
         """Display scan results in the text area."""
         self.results_text.delete(1.0, tk.END)
+        
+        # Stop and hide progress bar
+        self.progress.stop()
+        self.progress.config(value=0)
+        self.progress.grid_remove()  # Hide progress bar
+        self.progress_label.grid_remove()  # Hide progress label
+        
+        # Re-enable buttons
+        self.scan_btn.config(state='normal')
+        self.refresh_btn.config(state='normal')
         
         if not result["success"]:
             self._show_error(result["message"])
@@ -193,9 +229,6 @@ class SecureWipeGUI:
         else:
             self._format_device_results(devices)
             self.status_label.config(text=f"✅ Scan complete - {len(devices)} devices found", style='Success.TLabel')
-        
-        self.progress.stop()
-        self.scan_btn.config(state='normal')
 
     def _format_device_results(self, devices):
         """Format and display device information."""
@@ -264,9 +297,18 @@ class SecureWipeGUI:
         """Display error message."""
         self.results_text.delete(1.0, tk.END)
         self.results_text.insert(tk.END, f"❌ ERROR: {error_msg}\n")
-        self.status_label.config(text="❌ Scan failed", style='Error.TLabel')
+        
+        # Stop and hide progress bar
         self.progress.stop()
+        self.progress.config(value=0)
+        self.progress.grid_remove()  # Hide progress bar
+        self.progress_label.grid_remove()  # Hide progress label
+        
+        # Re-enable buttons
         self.scan_btn.config(state='normal')
+        self.refresh_btn.config(state='normal')
+        
+        self.status_label.config(text="❌ Scan failed", style='Error.TLabel')
         messagebox.showerror("Error", error_msg)
 
     def _refresh_scan(self):
@@ -277,6 +319,17 @@ class SecureWipeGUI:
     def _clear_results(self):
         """Clear results display."""
         self.results_text.delete(1.0, tk.END)
+        
+        # Hide progress bar completely
+        self.progress.stop()
+        self.progress.config(value=0)
+        self.progress.grid_remove()  # Hide progress bar
+        self.progress_label.grid_remove()  # Hide progress label
+        
+        # Re-enable buttons
+        self.scan_btn.config(state='normal')
+        self.refresh_btn.config(state='normal')
+        
         self.status_label.config(text="Ready to scan devices", style='')
 
     def _export_results(self):
