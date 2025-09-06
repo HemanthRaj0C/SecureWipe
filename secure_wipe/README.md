@@ -59,3 +59,33 @@ sudo -E python3 gui.py
 ## Security Warning
 
 ⚠️ **DANGER**: The generated commands will **PERMANENTLY DESTROY ALL DATA** on target devices. Always verify device paths before execution!
+
+## Features
+
+- **Modern, Safe GUI**: Scan, select, and securely wipe USB/NVMe/HDD/SSD drives with a single click.
+- **Device Safety**: Only USB drives are wipe-enabled by default; other drives are protected unless you change the code.
+- **Live Progress**: See wipe progress, total written, and ETA in real time.
+- **Disk Usage Bar**: Visualizes how much of the device has been wiped.
+- **Utilization Graph**: Theme-matched, full-width sparkline shows real-time disk activity (I/O %util) with no distracting background, blending with the app's look.
+- **Immediate Cancel**: Cancel button instantly stops the wipe (kills all related processes safely).
+- **No Data Loss by Accident**: Confirmation dialogs and clear device info for every wipe action.
+- **Works with Sudo/X11**: Use `run_gui.sh` for hassle-free GUI launch as root.
+
+## Screenshots
+
+![GUI Example](../screenshots/secure_wipe_gui.jpeg)
+
+## FAQ
+
+**Q: Why does the utilization graph look different from other apps?**
+A: The graph is designed to match the app's neutral gray theme, with subtle blue for activity and black text for clarity. No extra background, no clashing colors.
+
+**Q: How do I enable wiping for non-USB drives?**
+A: Edit the `gui.py` and change the device type check (search for `if device["classification"] == "USB"`).
+
+**Q: The GUI doesn't launch as root!**
+A: Always use `./run_gui.sh` to handle X11 permissions automatically.
+
+---
+
+For more details, see the comments in each file or open an issue.
